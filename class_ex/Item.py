@@ -46,8 +46,12 @@ class Item:
     def manufacturer(self, new_manufacturer):
         self.__manufacturer = new_manufacturer
 
+    def __print_helper(self):
+        return f'{self.name} ({self.category}) sold at: {self.price}$, manufactured by {self.manufacturer}'
+
     def print_item(self):
-        print(f'{self.name} ({self.category}) sold at: {self.price}$, manufactured by {self.manufacturer}')
+        print(self.__print_helper())
+
 
 
 if __name__ == "__main__":
