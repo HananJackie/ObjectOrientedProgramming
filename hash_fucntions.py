@@ -1,23 +1,26 @@
+from class_ex.student import Student
+
 HASH_TABLE_SIZE = 100000
 hash_table = [[] for i in range(HASH_TABLE_SIZE)]
 
+class Student:
+    def __init__(self, name, age, grade):
+        self.name = name
+        self.age = age
+        self.grade = grade
 
-student_1 = {
-    'name': 'Cole',
-    'age': 15,
-    'grade': 10
-}
-student_2 = {
-    'name': 'Cleo',
-    'age': 16,
-    'grade': 10
-}
+    def __hash__(self):
+        return hash((self.name, self.age, self.grade))
 
-student_3 = {
-    'name': 'Ada',
-    'age': 16,
-    'grade': 10
-}
+    def __eq__(self, other):
+        return (self.name, self.age, self.grade, id(self)) == (other.name, other.age, other.grade, id(other))
+
+    def __str__(self):
+        return f'student(name={self.name}, age={self.age}, grade={self.grade})'
+
+    def __repr__(self):
+        return f'Student(name={self.name}, age={self.age}, grade={self.grade})'
+
 
 def hash_function(key):
     return sum([ord(c) for c in key]) % HASH_TABLE_SIZE
@@ -31,22 +34,20 @@ def get(student_name):
         if student['name'] == student_name:
             return student
 
-print(hash_table)
-inset(student_1)
-print(hash_table)
-inset(student_2)
-print(hash_table)
-inset(student_3)
-print(hash_table)
-print(get('Cleo'))
-
+student_1 = Student(name='Cole', age=15, grade=10)
+student_2 = Student(name='Cleo', age=16, grade=10)
+student_3 = Student(name='Ada', age=15, grade=10)
+student_4 = Student(name='Ada', age=15, grade=10)
 
 
 students = {
-    student_1['name']: student_1,
-    student_2['name']: student_2,
-    student_3['name']: student_3
+    student_1: student_1,
+    student_2: student_2,
+    student_3: student_3,
+    student_4: student_4
 }
+print(student_1 == student_4)
+print(student_3 == student_4)
 
-students['Ada']
-print(hash('Ada'))
+for student in students:
+    print(student)
