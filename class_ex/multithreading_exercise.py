@@ -1,9 +1,12 @@
 import concurrent.futures
+import queue
 import threading
 import time
 
-CUSTOMERS_AMOUNT = 1000
-WORKERS_AMOUNT = 10
+from overrides import overrides
+
+CUSTOMERS_AMOUNT = 10000
+WORKERS_AMOUNT = 1000
 
 class Customer:
 
@@ -12,6 +15,47 @@ class Customer:
     self.customer_first_name = customer_first_name
     self.customer_last_name = customer_last_name
     self.customer_email = customer_email
+
+class EmailSenderWorker(threading.Thread):
+    def __init__(self, task_queue):
+        super().__init__()
+        self.task_queue = task_queue
+
+    @overrides
+    def run(self):
+        while True:
+            customer = self.task_queue.get()
+
+            if customer is None:
+                self.task_queue.task_done()
+                break
+
+            send_email(customer)
+            self.task_queue.task_done()
+
+class CustomThreadPool:
+    def __init__(self, num_of_workers):
+        self.task_queue = queue.Queue()
+        self.workers = []
+
+        for _ in range(num_of_workers):
+            worker = EmailSenderWorker(self.task_queue)
+            self.workers.append(worker)
+            worker.start()
+
+    def submit(self, customer):
+        self.task_queue.put(customer)
+
+    def shutdown(self):
+        self.task_queue.join()
+
+        for _ in self.workers:
+            self.task_queue.put(None)
+
+        for worker in self.workers:
+            worker.join()
+
+
 
 def send_email(customer: Customer):
   # Simulate a network delay for sending an email
@@ -31,40 +75,14 @@ customers = [
 ]
 
 if __name__ == "__main__":
-    # 1 single threaded solution
-
-    print("--- 1. Single Thread Solution ---")
-    start_time = time.time()
-
-    for customer in customers:
-      send_email(customer)
-
-    print(f"Single thread finished in: {time.time() - start_time:.2f} seconds\n")
-
-
-    print(f"--- 2. Thread-Per-Customer Solution ({CUSTOMERS_AMOUNT} Threads) ---")
-    start_time = time.time()
-    workers = []
-
-    # Create and start a thread for each customer
-    for customer in customers:
-      # worker = EmailSenderWorker(customer)
-      worker = threading.Thread(target=send_email, args=(customer,))
-      workers.append(worker)
-      worker.start()
-
-    # Wait for all threads to complete
-    for worker in workers:
-      worker.join()
-
-    print(f"{CUSTOMERS_AMOUNT} threads finished in: {time.time() - start_time:.2f} seconds\n")
-
-
-    print(f"--- 3. Thread Pool Solution (Pool of {WORKERS_AMOUNT}) ---")
     start_time = time.time()
 
     # Use a thread pool with a max limit of WORKERS_AMOUNT workers
-    with concurrent.futures.ThreadPoolExecutor(max_workers=WORKERS_AMOUNT) as executor:
-      executor.map(send_email, customers)
+    pool = CustomThreadPool(num_of_workers=WORKERS_AMOUNT)
+
+    for customer in customers:
+        pool.submit(customer)
+
+    pool.shutdown()
 
     print(f"Thread pool finished in: {time.time() - start_time:.2f} seconds\n")
